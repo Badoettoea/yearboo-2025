@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Yearbook 2025</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header-custom">
+    <img src="https://fcrzfzpfzuqqcsivwmyo.supabase.co/storage/v1/object/public/alumni2025//batch_logo_bungo_3-removebg-preview%20(1).webp" alt="Yearbook Logo">
+  </header>
+
+  <main class="container">
+    <div id="adminPanel" class="admin-panel">
+      <h2 class="text-xl font-semibold mb-4">Admin: Edit Data Alumni</h2>
+      <input type="text" id="nama" placeholder="Nama">
+      <input type="text" id="ttl" placeholder="TTL (Tempat, Tanggal Lahir)">
+      <input type="text" id="nis" placeholder="NIS">
+      <input type="text" id="nisn" placeholder="NISN">
+      <input type="text" id="urlfoto" placeholder="URL Foto">
+      <input type="text" id="urlraport" placeholder="URL Raport">
+      <input type="text" id="urlijazah" placeholder="URL Ijazah">
+      <button class="submit-btn" id="submitAdmin" disabled>Kirim</button>
+    </div>
+  </main>
+
+  <nav class="navbar">
+    <a href="index.html">Home</a>
+    <a href="profile.html">Profile</a>
+    <a href="e_ijazah.html">E-Ijazah</a>
+    <a href="memories.html">Memories</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </nav>
+
+  <script>
+    const supabaseUrl = 'https://fcrzfzpfzuqqcsivwmyo.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjcnpmenBmenVxcWNzaXZ3bXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NTAyMjEsImV4cCI6MjA2MjIyNjIyMX0.FYSZKX6TY0tmHAoZnw9EscPEJqIncEhlJrLs_735nLg';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    function logout() {
+      localStorage.removeItem('studentProfileId');
+      localStorage.removeItem('isAdmin');
+      window.location.href = 'index.html';
+    }
+
+    function checkAdminInputs() {
+      const inputs = ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'];
+      const submitBtn = document.getElementById('submitAdmin');
+      const allFilled = inputs.every(id => document.getElementById(id).value.trim());
+      submitBtn.disabled = !allFilled;
+    }
+
+    ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'].forEach(id => {
+      document.getElementById(id).addEventListener('input', checkAdminInputs);
+    });
+
+    document.getElementById('submitAdmin').onclick = async () => {
+      const nama = document.getElementById('nama').value.trim();
+      const ttl = document.getElementById('ttl').value.trim();
+      const nis = document.getElementById('nis').value.trim();
+      const nisn = document.getElementById('nisn').value.trim();
+      const urlfoto = document.getElementById('urlfoto').value.trim();
+      const urlraport = document.getElementById('urlraport').value.trim();
+      const urlijazah = document.getElementById('urlijazah').value.trim();
+
+      const { data: oldData } = await supabase.from('alumni2025').select('nis').eq('nis', nis);
+      if (oldData.length > 0) {
+        await supabase.from('alumni2025').delete().eq('nis', nis);
+        await supabase.storage.from('alumni2025').remove([`${nis}_foto`]);
+        await supabase.storage.from('raport').remove([`${nis}_raport`]);
+        await supabase.storage.from('ijazah').remove([`${nis}_ijazah`]);
+      }
+
+      const { error } = await supabase.from('alumni2025').insert({
+        nama,
+        ttl,
+        nis,
+        nisn,
+        urlfoto,
+        urlraport,
+        urlijazah
+      });
+
+      if (error) {
+        alert('Error menyimpan data: ' + error.message);
+        return;
+      }
+
+      ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('submitAdmin').disabled = true;
+      alert('Data berhasil disimpan!');
+    };
+
+    async function checkAdmin() {
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      document.getElementById('adminPanel').style.display = isAdmin ? 'block' : 'none';
+      if (!isAdmin) {
+        window.location.href = 'index.html';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkAdmin);
+  </script>
+</body>
+</html>
