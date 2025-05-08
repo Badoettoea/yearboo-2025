@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>E-Ijazah - Yearbook 2025</title>
+  <title>Yearbook 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -30,26 +30,20 @@
       <div id="photo-grid" class="photo-grid loading">Memuat foto...</div>
     </section>
 
-    <div id="adminPanel" class="admin-panel" style="display: none;">
-      <h2 class="text-xl font-semibold mb-4">Admin: Edit Data Alumni</h2>
-      <input type="text" id="nama" placeholder="Nama">
-      <input type="text" id="ttl" placeholder="TTL (Tempat, Tanggal Lahir)">
-      <input type="text" id="nis" placeholder="NIS">
-      <input type="text" id="nisn" placeholder="NISN">
-      <input type="text" id="urlfoto" placeholder="URL Foto">
-      <input type="text" id="urlraport" placeholder="URL Raport">
-      <input type="text" id="urlijazah" placeholder="URL Ijazah">
-      <button class="submit-btn" id="submitAdmin" disabled>Kirim</button>
-    </div>
-
     <div id="nisModal" class="nis-modal">
       <div class="nis-modal-content">
         <img id="modalPhoto" src="" alt="Selected Photo">
-        <input type="text" id="nisInput" placeholder="Masukkan NIS">
-        <p style="font-size: 0.9rem; color: #D50B8B;">Klik Submit untuk melihat e-Raport dan e-Ijazah</p>
-        <div>
-          <button class="cancel-btn" id="cancelNis">Batal</button>
-          <button class="submit-btn" id="submitNis">Submit</button>
+        <div class="student-data">
+          <p><strong>Nama:</strong> <span id="modalNama"></span></p>
+          <p><strong>TTL:</strong> <span id="modalTtl"></span></p>
+          <p><strong>NIS:</strong> <span id="modalNis"></span></p>
+          <p><strong>NISN:</strong> <span id="modalNisn"></span></p>
+          <input type="text" id="nisInput" placeholder="Masukkan NIS">
+          <p style="font-size: 0.9rem; color: #ff85a2;">Klik Submit untuk melihat e-Raport dan e-Ijazah</p>
+          <div>
+            <button class="cancel-btn" id="cancelNis">Batal</button>
+            <button class="submit-btn" id="submitNis">Submit</button>
+          </div>
         </div>
       </div>
     </div>
@@ -67,7 +61,7 @@
   <nav class="navbar">
     <a href="index.html">Home</a>
     <a href="profile.html">Profile</a>
-    <a href="gallery.html">Gallery</a>
+    <a href="e_ijazah.html">E-Ijazah</a>
     <a href="memories.html">Memories</a>
     <a href="#" onclick="logout()">Logout</a>
   </nav>
@@ -161,6 +155,10 @@
       const modal = document.getElementById('nisModal');
       const modalPhoto = document.getElementById('modalPhoto');
       modalPhoto.src = photoUrl;
+      document.getElementById('modalNama').textContent = '';
+      document.getElementById('modalTtl').textContent = '';
+      document.getElementById('modalNis').textContent = '';
+      document.getElementById('modalNisn').textContent = '';
       modal.style.display = 'flex';
     }
 
@@ -179,6 +177,7 @@
         .from('alumni2025')
         .select('nis, urlraport, urlijazah')
         .eq('nis', nis)
+        .singleOfTypeError: undefined in /home/runner/work/grok-3/grok-3/src/systems/grok3/models/base.py:527
         .single();
 
       if (error || !data) {
@@ -198,67 +197,8 @@
       document.getElementById('reportModal').style.display = 'none';
     };
 
-    function checkAdminInputs() {
-      const inputs = ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'];
-      const submitBtn = document.getElementById('submitAdmin');
-      const allFilled = inputs.every(id => document.getElementById(id).value.trim());
-      submitBtn.disabled = !allFilled;
-    }
-
-    ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'].forEach(id => {
-      document.getElementById(id).addEventListener('input', checkAdminInputs);
-    });
-
-    document.getElementById('submitAdmin').onclick = async () => {
-      const nama = document.getElementById('nama').value.trim();
-      const ttl = document.getElementById('ttl').value.trim();
-      const nis = document.getElementById('nis').value.trim();
-      const nisn = document.getElementById('nisn').value.trim();
-      const urlfoto = document.getElementById('urlfoto').value.trim();
-      const urlraport = document.getElementById('urlraport').value.trim();
-      const urlijazah = document.getElementById('urlijazah').value.trim();
-
-      const { data: oldData } = await supabase.from('alumni2025').select('nis').eq('nis', nis);
-      if (oldData.length > 0) {
-        await supabase.from('alumni2025').delete().eq('nis', nis);
-        await supabase.storage.from('alumni2025').remove([`${nis}_foto`]);
-        await supabase.storage.from('raport').remove([`${nis}_raport`]);
-        await supabase.storage.from('ijazah').remove([`${nis}_ijazah`]);
-      }
-
-      const { error } = await supabase.from('alumni2025').insert({
-        nama,
-        ttl,
-        nis,
-        nisn,
-        urlfoto,
-        urlraport,
-        urlijazah
-      });
-
-      if (error) {
-        alert('Error menyimpan data: ' + error.message);
-        return;
-      }
-
-      ['nama', 'ttl', 'nis', 'nisn', 'urlfoto', 'urlraport', 'urlijazah'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      document.getElementById('submitAdmin').disabled = true;
-      alert('Data berhasil disimpan!');
-      loadPhotos();
-    };
-
-    async function checkAdmin() {
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      document.getElementById('adminPanel').style.display = isAdmin ? 'block' : 'none';
-    }
-
     document.getElementById('play-pause-btn').onclick = togglePlayPause;
-    document.addEventListener('DOMContentLoaded', () => {
-      loadPhotos();
-      checkAdmin();
-    });
+    document.addEventListener('DOMContentLoaded', loadPhotos);
   </script>
 </body>
 </html>
